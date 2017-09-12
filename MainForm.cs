@@ -17,8 +17,8 @@ namespace NipponseiAnalyzer
         private Thread RankingThread;
         private Thread TorrentThread;
 
-        private delegate void UpdateMusicListDelegate();
-        private delegate string getText();
+        private delegate void voidDelegate();
+        private delegate string stringDelegate();
         
         public MainForm()
         {
@@ -26,20 +26,32 @@ namespace NipponseiAnalyzer
             MusicArchive = new MusicArchive();
         }
         
-        private void UpdateMusicList()
+        private async void UpdateMusicListAsync()
         {
             foreach (MusicInfo info in MusicArchive.List)
             {
-                MusicListBox.Items.Add(String.Format("#{0}  \t다운로드: {1}      \t{2}", info.Number, info.DownloadCount, info.Name));
+                string inputString = string.Format("#{0}  \t다운로드: {1}      \t{2}", info.Number, info.DownloadCount, info.Name);
+                await AddMusicToList(inputString);
             }
 
-            //RankingCheckbox.Enabled = true;
             TorrentButton.Enabled = true;
+            //RankingCheckbox.Enabled = true;
             //SearchButton.Enabled = true;
             //SearchTextBox.Enabled = true;
         }
 
-        private string SelectedString()
+        private Task AddMusicToList(string str)
+        {
+            Action action = delegate ()
+            {
+                MusicListBox.Items.Add(str);
+            };
+
+            Task task = Task.Factory.StartNew(action);
+            return task;
+        }
+
+        private string getSelectedString()
         {
             return MusicListBox.SelectedItem.ToString();
         }
@@ -48,33 +60,26 @@ namespace NipponseiAnalyzer
         {
             MusicArchive.TryDownload();
 
-            if(MusicArchive._ShouldDownload == false)
+            if(MusicArchive.ShouldDownload == false)
             {
-                if(MusicListBox.InvokeRequired)
+                voidDelegate d = new voidDelegate(UpdateMusicListAsync);
+                MusicListBox.BeginInvoke(d);
+            }
+            else
+            {
+                ArchiveButton.BeginInvoke(new Action(() =>
                 {
-                    UpdateMusicListDelegate d = new UpdateMusicListDelegate(UpdateMusicList);
-                    Invoke(d);
-                }
-                else
-                {
-                    UpdateMusicList();
-                }
+                    ArchiveButton.Enabled = true;
+                }));
             }
         }
         
         private void TorrentThreadFunc()
         {
             string selected;
-
-            if(MusicListBox.InvokeRequired)
-            {
-                getText d = new getText(SelectedString);
-                selected = (string)Invoke(d);
-            }
-            else
-            {
-                selected = MusicListBox.SelectedItem.ToString();
-            }
+            
+            stringDelegate d = new stringDelegate(getSelectedString);
+            selected = (string)Invoke(d);
 
             int musicIndex;
             int.TryParse(selected.Substring(1, selected.IndexOf(' ') - 1), out musicIndex);

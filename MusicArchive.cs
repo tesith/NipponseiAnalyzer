@@ -30,7 +30,7 @@ namespace NipponseiAnalyzer
         private const string NIPPONSEI_TORRENT_TRACKER_URL = "http://tracker.minglong.org/torrents/";
         private string ArchiveHTML;
         private bool _shouldDownload;
-        public bool _ShouldDownload
+        public bool ShouldDownload
         {
             get
             {
@@ -125,9 +125,9 @@ namespace NipponseiAnalyzer
                         
                         _shouldDownload = false;
                     }
-                    catch (Exception ee)
+                    catch (Exception e)
                     {
-                        MessageBox.Show(ee.ToString());
+                        MessageBox.Show(e.ToString());
                     }
                 }
                 else
