@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.NetworkInformation;
@@ -37,14 +38,44 @@ namespace NipponseiAnalyzer
                 return _shouldDownload;
             }
         }
-
+        
         public List<MusicInfo> List { get; }
-        public List<MusicInfo> ListBySort { get; }
 
         public MusicArchive()
         {
             _shouldDownload = true;
             List = new List<MusicInfo>();
+        }
+        
+        private void DeleteBlank(ref string str)
+        {
+            string[] split = str.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            str = "";
+            foreach (string part in split)
+            {
+                str += part.Trim();
+                str += ' ';
+            }
+
+            str.Trim();
+            /*
+            bool beforeIsBlank = false;
+
+            for(int i = 0; ; )
+            {
+                if (str[i] == '\0')
+                    break;
+                if (str[i] == ' ')
+                {
+                    if (beforeIsBlank)
+                        str = str.Remove(i, 1);
+                    else
+                    {
+                        beforeIsBlank = true;
+                        i++;
+                    }
+                }
+            }*/
         }
 
         static bool IsInternetConnected()
@@ -94,14 +125,38 @@ namespace NipponseiAnalyzer
                     {
                         if (ArchiveHTML == null)
                         {
-                            var webClient = new WebClient();
-                            string HTML = webClient.DownloadString(NIPPONSEI_PACKLIST_ARCHIVE_URL);
-                            ArchiveHTML = HTML.Substring(HTML.IndexOf("#1"));
+                            
+                            if (MainForm.MyForm == null)
+                                return;
+
+                            MainForm.MyForm.LabelStatusUpdate("곡 정보를 읽는중");
+
+                            HttpWebRequest http = (HttpWebRequest)WebRequest.Create(NIPPONSEI_PACKLIST_ARCHIVE_URL);
+                            using (WebResponse response = http.GetResponse())
+                            {
+                                Stream stream = response.GetResponseStream();
+
+                                string HTML;
+                                using (StreamReader sr = new StreamReader(stream))
+                                {
+                                    HTML = sr.ReadToEnd();
+                                }
+                                
+                                ArchiveHTML = HTML.Substring(HTML.IndexOf("#1"));
+                            }
                         }
 
                         string[] MusicList = ArchiveHTML.Split('\n');
 
                         int MusicListLength = MusicList.Length;
+
+                        if (MainForm.MyForm == null)
+                            return;
+
+                        MainForm.MyForm.ProgressBarMaximum(MusicListLength);
+                        MainForm.MyForm.ProgressBarValueUpdate(0);
+                        MainForm.MyForm.LabelStatusUpdate("문자열 처리중");
+
                         for (int i = 0; i < MusicListLength; i++)
                         {
                             string Music = MusicList[i];
@@ -119,8 +174,13 @@ namespace NipponseiAnalyzer
                             int downloadCount;
                             int.TryParse(Information[1].Substring(0, Information[1].Length - 1), out downloadCount);
                             string name = Information[3];
+                            DeleteBlank(ref name);
 
                             List.Add(new MusicInfo(number, downloadCount, name));
+
+                            if (MainForm.MyForm == null)
+                                return;
+                            MainForm.MyForm.ProgressBarValuePlusOne();
                         }
                         
                         _shouldDownload = false;
@@ -141,9 +201,20 @@ namespace NipponseiAnalyzer
         {
             try
             {
-                var webClient = new WebClient();
-                string targetFileName = List[index - 1].Name + ".torrent";
-                webClient.DownloadFile(NIPPONSEI_TORRENT_TRACKER_URL + targetFileName, targetFileName);
+                using (SaveFileDialog saveAs = new SaveFileDialog())
+                {
+                    string targetFileName = List[index - 1].Name.Trim() + ".torrent";
+
+                    saveAs.Filter = "Torrent Files|*.torrent";
+                    saveAs.FileName = targetFileName;
+
+                    if(saveAs.ShowDialog() == DialogResult.OK)
+                    {
+                        //MessageBox.Show(saveAs.OpenFile().ToString());
+                        var webClient = new WebClient();
+                        webClient.DownloadFile(NIPPONSEI_TORRENT_TRACKER_URL + targetFileName, saveAs.FileName);
+                    }
+                }
             }
             catch (Exception torrentException)
             {

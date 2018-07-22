@@ -35,6 +35,8 @@
             this.RankingCheckbox = new System.Windows.Forms.CheckBox();
             this.SearchTextBox = new System.Windows.Forms.TextBox();
             this.SearchButton = new System.Windows.Forms.Button();
+            this.ProgressBar = new System.Windows.Forms.ProgressBar();
+            this.LabelStatus = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // ArchiveButton
@@ -70,7 +72,7 @@
             // 
             // TestButton
             // 
-            this.TestButton.Location = new System.Drawing.Point(892, 12);
+            this.TestButton.Location = new System.Drawing.Point(417, 509);
             this.TestButton.Name = "TestButton";
             this.TestButton.Size = new System.Drawing.Size(75, 23);
             this.TestButton.TabIndex = 3;
@@ -109,11 +111,29 @@
             this.SearchButton.UseVisualStyleBackColor = true;
             this.SearchButton.Click += new System.EventHandler(this.SearchButton_Click);
             // 
+            // ProgressBar
+            // 
+            this.ProgressBar.Location = new System.Drawing.Point(740, 12);
+            this.ProgressBar.Name = "ProgressBar";
+            this.ProgressBar.Size = new System.Drawing.Size(227, 23);
+            this.ProgressBar.TabIndex = 7;
+            // 
+            // LabelStatus
+            // 
+            this.LabelStatus.AutoSize = true;
+            this.LabelStatus.Location = new System.Drawing.Point(546, 17);
+            this.LabelStatus.Name = "LabelStatus";
+            this.LabelStatus.Size = new System.Drawing.Size(41, 12);
+            this.LabelStatus.TabIndex = 8;
+            this.LabelStatus.Text = "대기중";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(979, 547);
+            this.Controls.Add(this.LabelStatus);
+            this.Controls.Add(this.ProgressBar);
             this.Controls.Add(this.SearchButton);
             this.Controls.Add(this.SearchTextBox);
             this.Controls.Add(this.RankingCheckbox);
@@ -123,6 +143,7 @@
             this.Controls.Add(this.ArchiveButton);
             this.Name = "MainForm";
             this.Text = "Nipponsei Analyzer v1.0";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.OnClosing);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -137,6 +158,8 @@
         private System.Windows.Forms.CheckBox RankingCheckbox;
         private System.Windows.Forms.TextBox SearchTextBox;
         private System.Windows.Forms.Button SearchButton;
+        private System.Windows.Forms.ProgressBar ProgressBar;
+        private System.Windows.Forms.Label LabelStatus;
     }
 }
 
