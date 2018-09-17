@@ -13,13 +13,11 @@ namespace NipponseiAnalyzer
 {
     struct MusicInfo
     {
-        public int Number;
         public int DownloadCount;
         public string Name;
 
-        public MusicInfo(int number, int dlCount, string name)
+        public MusicInfo(int dlCount, string name)
         {
-            Number = number;
             DownloadCount = dlCount;
             Name = name;
         }
@@ -39,12 +37,35 @@ namespace NipponseiAnalyzer
             }
         }
         
-        public List<MusicInfo> List { get; }
+        public class MyList
+        {
+            public SortedList<int, MusicInfo> m_list { get; }
+            private readonly object m_lock = new object();
+
+            public MyList()
+            {
+                m_list = new SortedList<int, MusicInfo>();
+            }
+            public void Add(int key, MusicInfo info)
+            {
+                lock(m_lock)
+                {
+                    m_list.Add(key, info);
+                }
+            }
+            public MusicInfo this[int i]
+            {
+                get => m_list[i];
+                set => m_list[i] = value;
+            }
+        }
+
+        public MyList List { get; set; }
 
         public MusicArchive()
         {
             _shouldDownload = true;
-            List = new List<MusicInfo>();
+            List = new MyList();
         }
         
         private void DeleteBlank(ref string str)
@@ -114,6 +135,32 @@ namespace NipponseiAnalyzer
             return true;
         }
 
+        private void TryParse(string s)
+        {
+            int cutIndex = s.IndexOf(" align");
+            if (cutIndex == -1)
+                return;
+
+            s = s.Remove(cutIndex, 14);
+
+            string[] info = s.Split(new string[] { "</td><td>" }, StringSplitOptions.RemoveEmptyEntries);
+            if (info.Length != 4)
+                return;
+
+            string sNum = info[0];
+            int number;
+            int.TryParse(sNum.Substring(sNum.IndexOf('#') + 1), out number);
+
+            string sDown = info[1];
+            int down;
+            int.TryParse(sDown.Substring(0, sDown.Length - 1), out down);
+
+            string sName = info[3];
+            DeleteBlank(ref sName);
+
+            List.Add(number, new MusicInfo(down, sName));
+        }
+
         // 처음 실행할 경우 다운로드 합니다
         public void TryDownload()
         {
@@ -157,32 +204,13 @@ namespace NipponseiAnalyzer
                         MainForm.MyForm.ProgressBarValueUpdate(0);
                         MainForm.MyForm.LabelStatusUpdate("문자열 처리중");
 
-                        for (int i = 0; i < MusicListLength; i++)
-                        {
-                            string Music = MusicList[i];
+                        Parallel.For(0, MusicListLength, i => {
+                            TryParse(MusicList[i]);
 
-                            int removeIndex = Music.IndexOf(" align");
-                            if (removeIndex == -1)
-                                break;
-
-                            Music = Music.Remove(removeIndex, 14);
-
-                            string[] Information = Music.Split(new string[] { "</td><td>" }, StringSplitOptions.RemoveEmptyEntries);
-
-                            int number;
-                            int.TryParse(Information[0].Substring(Information[0].IndexOf('#') + 1), out number);
-                            int downloadCount;
-                            int.TryParse(Information[1].Substring(0, Information[1].Length - 1), out downloadCount);
-                            string name = Information[3];
-                            DeleteBlank(ref name);
-
-                            List.Add(new MusicInfo(number, downloadCount, name));
-
-                            if (MainForm.MyForm == null)
-                                return;
+                            if (MainForm.MyForm == null) return;
                             MainForm.MyForm.ProgressBarValuePlusOne();
-                        }
-                        
+                        });
+
                         _shouldDownload = false;
                     }
                     catch (Exception e)

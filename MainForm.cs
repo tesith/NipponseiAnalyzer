@@ -78,21 +78,21 @@ namespace NipponseiAnalyzer
             try
             {
                 ProgressBar.Value = 0;
-                ProgressBar.Maximum = MusicArchive.List.Count;
+                ProgressBar.Maximum = MusicArchive.List.m_list.Count;
 
                 LabelStatusUpdate("리스트박스 처리중");
 
-                foreach (MusicInfo info in MusicArchive.List)
+                foreach (KeyValuePair<int, MusicInfo> Pair in MusicArchive.List.m_list)
                 {
+                    MusicInfo info = Pair.Value;
                     string str = string.Format(
                         "#{0}  \t다운로드: {1}      \t{2}",
-                        info.Number,
+                        Pair.Key,
                         info.DownloadCount,
                         info.Name);
 
                     await AddMusicToList(str);
 
-                    //MusicListBox.Items.Add(str);
                     ProgressBar.Value++;
                 }
 
