@@ -13,11 +13,13 @@ namespace NipponseiAnalyzer
 {
     struct MusicInfo
     {
+        public int Index;
         public int DownloadCount;
         public string Name;
 
-        public MusicInfo(int dlCount, string name)
+        public MusicInfo(int index, int dlCount, string name)
         {
+            Index = index;
             DownloadCount = dlCount;
             Name = name;
         }
@@ -39,18 +41,18 @@ namespace NipponseiAnalyzer
         
         public class MyList
         {
-            public SortedList<int, MusicInfo> m_list { get; }
+            public List<MusicInfo> m_list { get; set; }
             private readonly object m_lock = new object();
 
             public MyList()
             {
-                m_list = new SortedList<int, MusicInfo>();
+                m_list = new List<MusicInfo>();
             }
-            public void Add(int key, MusicInfo info)
+            public void Add(MusicInfo info)
             {
                 lock(m_lock)
                 {
-                    m_list.Add(key, info);
+                    m_list.Add(info);
                 }
             }
             public MusicInfo this[int i]
@@ -158,7 +160,7 @@ namespace NipponseiAnalyzer
             string sName = info[3];
             DeleteBlank(ref sName);
 
-            List.Add(number, new MusicInfo(down, sName));
+            List.Add(new MusicInfo(number, down, sName));
         }
 
         // 처음 실행할 경우 다운로드 합니다
@@ -204,12 +206,19 @@ namespace NipponseiAnalyzer
                         MainForm.MyForm.ProgressBarValueUpdate(0);
                         MainForm.MyForm.LabelStatusUpdate("문자열 처리중");
 
+                        /*
                         Parallel.For(0, MusicListLength, i => {
                             TryParse(MusicList[i]);
 
                             if (MainForm.MyForm == null) return;
                             MainForm.MyForm.ProgressBarValuePlusOne();
                         });
+                        */
+                        foreach (string str in MusicList)
+                        {
+                            TryParse(str);
+                            MainForm.MyForm.ProgressBarValuePlusOne();
+                        }
 
                         _shouldDownload = false;
                     }
@@ -231,7 +240,7 @@ namespace NipponseiAnalyzer
             {
                 using (SaveFileDialog saveAs = new SaveFileDialog())
                 {
-                    string targetFileName = List[index - 1].Name.Trim() + ".torrent";
+                    string targetFileName = List[index].Name.Trim() + ".torrent";
 
                     saveAs.Filter = "Torrent Files|*.torrent";
                     saveAs.FileName = targetFileName;

@@ -73,7 +73,7 @@ namespace NipponseiAnalyzer
             LabelStatus.BeginInvoke(d, message);
         }
 
-        private async void UpdateMusicListAsync()
+        private /*async*/ void UpdateMusicListAsync()
         {
             try
             {
@@ -81,17 +81,18 @@ namespace NipponseiAnalyzer
                 ProgressBar.Maximum = MusicArchive.List.m_list.Count;
 
                 LabelStatusUpdate("리스트박스 처리중");
+                MusicListBox.Items.Clear();
 
-                foreach (KeyValuePair<int, MusicInfo> Pair in MusicArchive.List.m_list)
+                foreach (MusicInfo info in MusicArchive.List.m_list)
                 {
-                    MusicInfo info = Pair.Value;
                     string str = string.Format(
                         "#{0}  \t다운로드: {1}      \t{2}",
-                        Pair.Key,
+                        info.Index,
                         info.DownloadCount,
                         info.Name);
 
-                    await AddMusicToList(str);
+                    /*await AddMusicToList(str);*/
+                    AddMusic(str);
 
                     ProgressBar.Value++;
                 }
@@ -99,7 +100,7 @@ namespace NipponseiAnalyzer
                 LabelStatusUpdate("완료");
 
                 TorrentButton.Enabled = true;
-                //RankingCheckbox.Enabled = true;
+                RankingCheckbox.Enabled = true;
                 //SearchButton.Enabled = true;
                 //SearchTextBox.Enabled = true;
             }
@@ -150,8 +151,10 @@ namespace NipponseiAnalyzer
         
         private void TorrentThreadFunc()
         {
-            string selected;
-            
+            //string selected;
+
+
+            /*
             stringDelegate d = new stringDelegate(getSelectedString);
             selected = (string)Invoke(d);
 
@@ -160,8 +163,10 @@ namespace NipponseiAnalyzer
                 selected.Substring(1, selected.IndexOf(' ') - 1), 
                 out musicIndex
                 );
+                */
 
-            MusicArchive.TorrentDownload(musicIndex);
+            //MusicInfo mi = MusicArchive.List[MusicListBox.SelectedIndex];
+            MusicArchive.TorrentDownload(MusicListBox.SelectedIndex);
         }
 
         private void RankingButton_Click(object sender, EventArgs e)
@@ -183,7 +188,16 @@ namespace NipponseiAnalyzer
 
         private void RankingCheckbox_CheckedChanged(object sender, EventArgs e)
         {
+            if (RankingCheckbox.Checked)
+            {
+                MusicArchive.List.m_list = MusicArchive.List.m_list.OrderByDescending(n => n.DownloadCount).ToList();
+            }
+            else
+            {
+                MusicArchive.List.m_list = MusicArchive.List.m_list.OrderBy(n => n.Index).ToList();
+            }
 
+            UpdateMusicListAsync();
         }
 
         private void TorrentButton_Click(object sender, EventArgs e)
